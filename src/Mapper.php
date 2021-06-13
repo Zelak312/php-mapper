@@ -2,22 +2,31 @@
 namespace Zelak\Mapper;
 
 use Exception;
+use phpDocumentor\Reflection\Types\Null_;
 use Zelak\Mapper\MappedClass;
 
 class Mapper {
 
-    private int $defaultPropertyLevel;
     private array $mappedClasses;
 
-    public function __construct(int $defaultPropertyLevel = 1)
+    public function __construct()
     {
-        $this->defaultPropertyLevel = $defaultPropertyLevel;
         $this->mappedClasses = array();
     }
+    
+    public function createMap(string $from, string $to): MappedClass {
+        $mapping = new MappedClass($from, $to);
+        array_push($this->mappedClasses, $mapping);
 
-    private function getMapper(string $fromClassName, string $toClassName): ?MappedClass {
+        return $mapping;
+    }
+    
+    private function getMapper(mixed $to): ?MappedClass {
+        if (is_array($to)) $to = $to[0];
+        if (!isset($to->fromType)) return NULL;
+
         foreach($this->mappedClasses as $mapping) {
-            if ($mapping->getFrom() != $fromClassName || $mapping->getTo() != $toClassName)
+            if ($mapping->getFrom() != $to->fromType || $mapping->getTo() != $to::class)
                 continue;
 
             return $mapping;
@@ -25,32 +34,20 @@ class Mapper {
 
         return NULL;
     }
-
-    public function createMap(string $from, string $to, int $propertyLevel = NULL): MappedClass {
-        if (!isset($propertyLevel)) $propertyLevel = $this->defaultPropertyLevel;
-
-        $mapping = new MappedClass($from, $to, $propertyLevel);
-        array_push($this->mappedClasses, $mapping);
-
-        return $mapping;
-    }
     
-    public function map(mixed $from, string $to): mixed {
-        $fromClass = is_object($from) || is_array($from) ? 
-            (is_array($from) ?
-                $from[0]::class : $from::class) : gettype($from);
-        $currentMapper = $this->getMapper($fromClass, $to);
+    public function map(mixed $data, mixed $to): mixed {
+        $currentMapper = $this->getMapper($to);
         
         if ($currentMapper == NULL) {
-            throw new Exception("No mapping found for " . $fromClass . " -> $to");
+            throw new Exception("No mapping found for " . $data::class . " -> ". $to::class);
         }
         
-        $wasArray = is_array($from);
-        $fromArray = $wasArray ? $from : array($from);
+        $wasArray = is_array($data);
+        $dataArray = $wasArray ? $data : array($data);
         $toArray = array();
 
-        foreach($fromArray as $entity) {
-            $toClass = class_exists($to) ? new $to() : "";
+        foreach($dataArray as $entity) {
+            $toClass = new $to();
             array_push($toArray, $currentMapper->doMapping($entity, $toClass, $this));
         }
 

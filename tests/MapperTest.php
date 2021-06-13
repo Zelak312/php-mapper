@@ -4,6 +4,7 @@ use Faker;
 use Exception;
 use Zelak\Mapper\Mapper;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 
 use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertInstanceOf;
@@ -18,30 +19,34 @@ final class MapperTest extends TestCase
     public static function setUpBeforeClass(): void {
         self::$faker = Faker\Factory::create();
         self::$mapper = new Mapper();
-        self::$mapper->createMap(User::class, UserDto::class);
-        self::$mapper->createMap(Product::class, ProductDto::class);
-        self::$mapper->createMap(Product::class, ProductNoMapDto::class);
-        self::$mapper->createMap(Buyer::class, BuyerDto::class);
+        self::$mapper->createMap((new UserDto())->fromType, UserDto::class);
+        self::$mapper->createMap((new ProductDto)->fromType, ProductDto::class);
+        self::$mapper->createMap((new ProductNoMapDto)->fromType, ProductNoMapDto::class);
+        self::$mapper->createMap((new BuyerDto)->fromType, BuyerDto::class);
 
-        self::$mapper->createMap(ProductArr::class, ProductArrDto::class)
+        self::$mapper->createMap((new ProductArrDto)->fromType, ProductArrDto::class)
             ->specify("buyer", BuyerDto::class);
 
         self::$mapper->createMap(User::class, "string")
            ->from(function($from) { return $from->id . "-" . $from->username; });
 
-        self::$mapper->createMap("string", UserDto::class)
-            ->from(function($from) { 
-                $userdto = new UserDto();
-                $userdto->id = explode("-", $from)[0];
-                $userdto->username = explode("-", $from)[1];
+        // self::$mapper->createMap("string", UserDto::class)
+        //     ->from(function($from) { 
+        //         $userdto = new UserDto();
+        //         $userdto->id = explode("-", $from)[0];
+        //         $userdto->username = explode("-", $from)[1];
 
-                return $userdto;
-            });
+        //         return $userdto;
+        //     });
     }
 
     public function testOneToOneBasicTypes(): void {
-        $expected = new User(self::$faker->text(), self::$faker->userName(), self::$faker->password());
-        $result = self::$mapper->map($expected, UserDto::class);
+        $expected = new stdClass();
+        $expected->id = self::$faker->text();
+        $expected->username = self::$faker->userName();
+        $expected->password = self::$faker->password();
+
+        $result = self::$mapper->map($expected, new UserDto());
         
         assertNotNull($result);
         assertInstanceOf(UserDto::class, $result);
@@ -55,11 +60,14 @@ final class MapperTest extends TestCase
         $nbrOfUsers = self::$faker->numberBetween(20, 40);
 
         for($i = 0; $i < $nbrOfUsers; $i++) {
-            $user = new User(self::$faker->text(), self::$faker->userName(), self::$faker->password());
+            $user = new stdClass();
+            $user->id = self::$faker->text();
+            $user->username = self::$faker->userName();
+            $user->password = self::$faker->password();
             array_push($expected, $user);
         }
 
-        $results = self::$mapper->map($expected, UserDto::class);
+        $results = self::$mapper->map($expected, new UserDto());
         
         assertNotNull($results);
         assertIsArray($results);
@@ -76,13 +84,17 @@ final class MapperTest extends TestCase
     public function testMappingNotFound(): void {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("No mapping found for Zelak\Mapper\Tests\UserDto -> Zelak\Mapper\Tests\NotMappedClass");
-        self::$mapper->map(new UserDto(), NotMappedClass::class);
+        self::$mapper->map(new UserDto(), new NotMappedClassDto());
     }
 
     public function testOneToOneWithNonBasicTypes(): void {
-        $buyer = new Buyer(self::$faker->name());
-        $expected = new Product(self::$faker->name(), $buyer);
-        $result = self::$mapper->map($expected, ProductDto::class);
+        $buyer = new stdClass();
+        $buyer->name = self::$faker->name();
+        $expected = new stdClass();
+        $expected->name = self::$faker->name();
+        $expected->buyer = $buyer;
+
+        $result = self::$mapper->map($expected, new ProductDto());
         
         assertNotNull($result);
         assertInstanceOf(ProductDto::class, $result);
@@ -95,11 +107,16 @@ final class MapperTest extends TestCase
         $nbr = self::$faker->numberBetween(20, 40);
 
         for($i = 0; $i < $nbr; $i++) {
-            $buyer = new Buyer(self::$faker->name());
-            array_push($expected, new Product(self::$faker->name(), $buyer));
+            $buyer = new stdClass();
+            $buyer->name = self::$faker->name();
+            $prod = new stdClass();
+            $prod->name = self::$faker->name();
+            $prod->buyer = $buyer;
+
+            array_push($expected, $prod);
         }
 
-        $results = self::$mapper->map($expected, ProductDto::class);
+        $results = self::$mapper->map($expected, new ProductDto());
         
         assertNotNull($results);
         assertIsArray($results);
@@ -114,24 +131,24 @@ final class MapperTest extends TestCase
 
     public function testMappingNotFoundFromProperty(): void {
         $this->expectException(Exception::class);
-        $this->expectExceptionMessage("No mapping found for Zelak\Mapper\Tests\Buyer -> Zelak\Mapper\Tests\NotMappedClass");
-        self::$mapper->map(new Product("nice", new Buyer("nice")), ProductNoMapDto::class);
+        $this->expectExceptionMessage("No mapping found for stdClass -> Zelak\Mapper\Tests\NotMappedClass");
+
+        $prod = new stdClass();
+        $prod->name = self::$faker->name();
+        $prod->buyer = new stdClass();
+
+        self::$mapper->map($prod, new ProductNoMapDto());
     }
 
     public function testArrayToArrayBasicTypeMapping(): void {
-        $expected = new ProductArr(self::$faker->name(), self::$faker->text());
-        $result = self::$mapper->map($expected, ProductArrDto::class);
-        
-        assertNotNull($result);
-        assertInstanceOf(ProductArrDto::class, $result);
-        assertEquals($expected->name, $result->name);
-        assertEquals($expected->buyer[0], $result->buyer[0]);
-    }
+        $buyer = new stdClass();
+        $buyer->name = self::$faker->name();
 
-    public function testArrayToArrayNonBasicTypeMapping(): void {
-        $buyer = new Buyer(self::$faker->name());
-        $expected = new ProductArr(self::$faker->name(), $buyer);
-        $result = self::$mapper->map($expected, ProductArrDto::class);
+        $expected = new stdClass();
+        $expected->name = self::$faker->name();
+        $expected->buyer = array($buyer);
+
+        $result = self::$mapper->map($expected, new ProductArrDto());
         
         assertNotNull($result);
         assertInstanceOf(ProductArrDto::class, $result);
@@ -139,21 +156,18 @@ final class MapperTest extends TestCase
         assertEquals($expected->buyer[0]->name, $result->buyer[0]->name);
     }
 
-    public function testNonBasicTypeToBasicType(): void {
-        $user = new User(self::$faker->text(), self::$faker->userName(), self::$faker->password());
-        $result = self::$mapper->map($user, "string");
+    public function testArrayToArrayNonBasicTypeMapping(): void {
+        $buyer = new stdClass();
+        $buyer->name = self::$faker->name();
 
+        $expected = new stdClass();
+        $expected->name = self::$faker->name();
+        $expected->buyer = array($buyer);
+        $result = self::$mapper->map($expected, new ProductArrDto());
+        
         assertNotNull($result);
-        assertEquals($user->id . "-" . $user->username, $result);
-    }
-
-    public function testBasicTypeToNonBasicType(): void {
-        $userstr =  "test-crap";
-        $result = self::$mapper->map($userstr, UserDto::class);
-
-        assertNotNull($result);
-        assertInstanceOf(UserDto::class, $result);
-        assertEquals(explode("-", $userstr)[0], $result->id);
-        assertEquals(explode("-", $userstr)[1], $result->username);
+        assertInstanceOf(ProductArrDto::class, $result);
+        assertEquals($expected->name, $result->name);
+        assertEquals($expected->buyer[0]->name, $result->buyer[0]->name);
     }
 }

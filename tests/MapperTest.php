@@ -19,25 +19,13 @@ final class MapperTest extends TestCase
     public static function setUpBeforeClass(): void {
         self::$faker = Faker\Factory::create();
         self::$mapper = new Mapper();
-        self::$mapper->createMap((new UserDto())->fromType, UserDto::class);
-        self::$mapper->createMap((new ProductDto)->fromType, ProductDto::class);
-        self::$mapper->createMap((new ProductNoMapDto)->fromType, ProductNoMapDto::class);
-        self::$mapper->createMap((new BuyerDto)->fromType, BuyerDto::class);
+        self::$mapper->createMap(UserDto::class);
+        self::$mapper->createMap(ProductDto::class);
+        self::$mapper->createMap(ProductNoMapDto::class);
+        self::$mapper->createMap(BuyerDto::class);
 
-        self::$mapper->createMap((new ProductArrDto)->fromType, ProductArrDto::class)
+        self::$mapper->createMap(ProductArrDto::class)
             ->specify("buyer", BuyerDto::class);
-
-        self::$mapper->createMap(User::class, "string")
-           ->from(function($from) { return $from->id . "-" . $from->username; });
-
-        // self::$mapper->createMap("string", UserDto::class)
-        //     ->from(function($from) { 
-        //         $userdto = new UserDto();
-        //         $userdto->id = explode("-", $from)[0];
-        //         $userdto->username = explode("-", $from)[1];
-
-        //         return $userdto;
-        //     });
     }
 
     public function testOneToOneBasicTypes(): void {
@@ -46,7 +34,7 @@ final class MapperTest extends TestCase
         $expected->username = self::$faker->userName();
         $expected->password = self::$faker->password();
 
-        $result = self::$mapper->map($expected, new UserDto());
+        $result = self::$mapper->map($expected, UserDto::class);
         
         assertNotNull($result);
         assertInstanceOf(UserDto::class, $result);
@@ -67,7 +55,7 @@ final class MapperTest extends TestCase
             array_push($expected, $user);
         }
 
-        $results = self::$mapper->map($expected, new UserDto());
+        $results = self::$mapper->map($expected, UserDto::class);
         
         assertNotNull($results);
         assertIsArray($results);
@@ -83,8 +71,8 @@ final class MapperTest extends TestCase
     
     public function testMappingNotFound(): void {
         $this->expectException(Exception::class);
-        $this->expectExceptionMessage("No mapping found for Zelak\Mapper\Tests\UserDto -> Zelak\Mapper\Tests\NotMappedClass");
-        self::$mapper->map(new UserDto(), new NotMappedClassDto());
+        $this->expectExceptionMessage("No mapping found for Zelak\Mapper\Tests\NotMappedClassDto");
+        self::$mapper->map(new UserDto(), NotMappedClassDto::class);
     }
 
     public function testOneToOneWithNonBasicTypes(): void {
@@ -94,7 +82,7 @@ final class MapperTest extends TestCase
         $expected->name = self::$faker->name();
         $expected->buyer = $buyer;
 
-        $result = self::$mapper->map($expected, new ProductDto());
+        $result = self::$mapper->map($expected, ProductDto::class);
         
         assertNotNull($result);
         assertInstanceOf(ProductDto::class, $result);
@@ -116,7 +104,7 @@ final class MapperTest extends TestCase
             array_push($expected, $prod);
         }
 
-        $results = self::$mapper->map($expected, new ProductDto());
+        $results = self::$mapper->map($expected, ProductDto::class);
         
         assertNotNull($results);
         assertIsArray($results);
@@ -131,13 +119,13 @@ final class MapperTest extends TestCase
 
     public function testMappingNotFoundFromProperty(): void {
         $this->expectException(Exception::class);
-        $this->expectExceptionMessage("No mapping found for stdClass -> Zelak\Mapper\Tests\NotMappedClass");
+        $this->expectExceptionMessage("No mapping found for Zelak\Mapper\Tests\NotMappedClassDto");
 
         $prod = new stdClass();
         $prod->name = self::$faker->name();
         $prod->buyer = new stdClass();
 
-        self::$mapper->map($prod, new ProductNoMapDto());
+        self::$mapper->map($prod, ProductNoMapDto::class);
     }
 
     public function testArrayToArrayBasicTypeMapping(): void {
@@ -148,7 +136,7 @@ final class MapperTest extends TestCase
         $expected->name = self::$faker->name();
         $expected->buyer = array($buyer);
 
-        $result = self::$mapper->map($expected, new ProductArrDto());
+        $result = self::$mapper->map($expected, ProductArrDto::class);
         
         assertNotNull($result);
         assertInstanceOf(ProductArrDto::class, $result);
@@ -163,7 +151,7 @@ final class MapperTest extends TestCase
         $expected = new stdClass();
         $expected->name = self::$faker->name();
         $expected->buyer = array($buyer);
-        $result = self::$mapper->map($expected, new ProductArrDto());
+        $result = self::$mapper->map($expected, ProductArrDto::class);
         
         assertNotNull($result);
         assertInstanceOf(ProductArrDto::class, $result);

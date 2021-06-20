@@ -9,25 +9,19 @@ use Zelak\Mapper\Mapper;
 
 class MappedClass {
 
-    private string $from;
     private string $to;
 
     private array $mappingClosures;
     private array $mappingIgnore;
     private array $mappingSpecify;
 
-    public function __construct(string $from, string $to)
+    public function __construct(string $toName)
     {
-        $this->from = $from;
-        $this->to = $to;
+        $this->to = $toName;
 
         $this->mappingClosures = array();
         $this->mappingIgnore = array();
         $this->mappingSpecify = array();
-    }
-
-    public function getFrom(): string {
-        return $this->from;
     }
 
     public function getTo(): string {
@@ -49,34 +43,34 @@ class MappedClass {
         return $this;
     }
 
-    public function doMapping(mixed $from, mixed $to, Mapper $mapper): mixed {
+    public function doMapping(mixed $data, mixed $toObject, Mapper $mapper): mixed {
         foreach($this->mappingClosures as $closure) {
-            $closure($from, $to);
+            $closure($data, $toObject);
         }
 
-        foreach($from as $key => $value) {
-            if (isset($to->{$key}) ||
-                !property_exists($to, $key) ||
+        foreach($data as $key => $value) {
+            if (isset($toObject->{$key}) ||
+                !property_exists($toObject, $key) ||
                 in_array($key, $this->mappingIgnore, true))
                 continue;
 
             $valueAssign = $value;
             if (is_object($value)) {
-                $rp = new ReflectionProperty($to::class, $key);
-                $other = new ($rp->getType()->getName())();
+                $rp = new ReflectionProperty($toObject, $key);
+                $other = $rp->getType()->getName();
                 $valueAssign = $mapper->map($value, $other);
             }
 
             if (is_array($value) && count($value) != 0 && is_object($value[0])) {
                 if (!isset($this->mappingSpecify[$key]))
-                    throw new Exception("No specified mapping found for " . $key . " -> Unknown, From " . $this->from);
+                    throw new Exception("No specified mapping found for " . $key . " -> Unknown, From " . $this->to);
                     
-                $valueAssign = $mapper->map($value, new ($this->mappingSpecify[$key])());
+                $valueAssign = $mapper->map($value, $this->mappingSpecify[$key]);
             }
             
-            $to->{$key} = $valueAssign;
+            $toObject->{$key} = $valueAssign;
         }
 
-        return $to;
+        return $toObject;
     }
 }

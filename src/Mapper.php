@@ -1,8 +1,8 @@
 <?php
 namespace Zelak\Mapper;
 
+use Error;
 use Exception;
-use phpDocumentor\Reflection\Types\Null_;
 use Zelak\Mapper\MappedClass;
 
 class Mapper {
@@ -14,19 +14,16 @@ class Mapper {
         $this->mappedClasses = array();
     }
     
-    public function createMap(string $from, string $to): MappedClass {
-        $mapping = new MappedClass($from, $to);
+    public function createMap(mixed $toName): MappedClass {
+        $mapping = new MappedClass($toName);
         array_push($this->mappedClasses, $mapping);
 
         return $mapping;
     }
     
-    private function getMapper(mixed $to): ?MappedClass {
-        if (is_array($to)) $to = $to[0];
-        if (!isset($to->fromType)) return NULL;
-
+    private function getMapper(mixed $toName): ?MappedClass {
         foreach($this->mappedClasses as $mapping) {
-            if ($mapping->getFrom() != $to->fromType || $mapping->getTo() != $to::class)
+            if ($mapping->getTo() != $toName)
                 continue;
 
             return $mapping;
@@ -35,19 +32,18 @@ class Mapper {
         return NULL;
     }
     
-    public function map(mixed $data, mixed $to): mixed {
-        $currentMapper = $this->getMapper($to);
+    public function map(mixed $data, mixed $toName): mixed {
+        $currentMapper = $this->getMapper($toName);
         
-        if ($currentMapper == NULL) {
-            throw new Exception("No mapping found for " . $data::class . " -> ". $to::class);
-        }
+        if ($currentMapper == NULL)
+            throw new Exception("No mapping found for $toName");
         
         $wasArray = is_array($data);
         $dataArray = $wasArray ? $data : array($data);
         $toArray = array();
 
         foreach($dataArray as $entity) {
-            $toClass = new $to();
+            $toClass = new $toName();
             array_push($toArray, $currentMapper->doMapping($entity, $toClass, $this));
         }
 

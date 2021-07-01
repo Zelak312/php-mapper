@@ -7,6 +7,7 @@ use PHPUnit\Framework\TestCase;
 use stdClass;
 
 use function PHPUnit\Framework\assertEquals;
+use function PHPUnit\Framework\assertFalse;
 use function PHPUnit\Framework\assertInstanceOf;
 use function PHPUnit\Framework\assertIsArray;
 use function PHPUnit\Framework\assertNotNull;
@@ -26,6 +27,14 @@ final class MapperTest extends TestCase
 
         self::$mapper->createMap(ProductArrDto::class)
             ->specify("buyer", BuyerDto::class);
+
+        self::$mapper->createMap(ProductArrPropDto::class)
+        ->specify("buyer", BuyerDto::class)
+            ->toArrayProp("buyer", "name");
+
+        self::$mapper->createMap(ProductRenameWrongDto::class);
+        self::$mapper->createMap(ProductRenameDto::class)
+            ->renameProp("buyer", "otherBuyer");
     }
 
     public function testOneToOneBasicTypes(): void {
@@ -157,5 +166,65 @@ final class MapperTest extends TestCase
         assertInstanceOf(ProductArrDto::class, $result);
         assertEquals($expected->name, $result->name);
         assertEquals($expected->buyer[0]->name, $result->buyer[0]->name);
+    }
+
+    public function testRenamePropFail(): void {
+        $buyer = new stdClass();
+        $buyer->name = self::$faker->name();
+
+        $expected = new stdClass();
+        $expected->name = self::$faker->name();
+        $expected->buyer = $buyer;
+        $result = self::$mapper->map($expected, ProductRenameWrongDto::class);
+
+        assertNotNull($result);
+        assertInstanceOf(ProductRenameWrongDto::class, $result);
+        assertEquals($expected->name, $result->name);
+        assertFalse(isset($result->otherBuyer));
+    }
+
+    public function testRenamePropSuccess(): void {
+        $buyer = new stdClass();
+        $buyer->name = self::$faker->name();
+
+        $expected = new stdClass();
+        $expected->name = self::$faker->name();
+        $expected->buyer = $buyer;
+        $result = self::$mapper->map($expected, ProductRenameDto::class);
+
+        assertNotNull($result);
+        assertInstanceOf(ProductRenameDto::class, $result);
+        assertEquals($expected->name, $result->name);
+        assertEquals($expected->buyer->name, $result->otherBuyer->name);
+    }
+
+    public function testToArrayWithArray(): void {
+        $buyer = new stdClass();
+        $buyer->name = self::$faker->name();
+
+        $expected = new stdClass();
+        $expected->name = self::$faker->name();
+        $expected->buyer = array($buyer);
+        $result = self::$mapper->map($expected, ProductArrPropDto::class);
+
+        assertNotNull($result);
+        assertInstanceOf(ProductArrPropDto::class, $result);
+        assertEquals($expected->name, $result->name);
+        assertEquals($expected->buyer[0]->name, $result->buyer[0]);
+    }
+
+    public function testToArrayWithArrayAssoc(): void {
+        $buyer = new stdClass();
+        $buyer->name = self::$faker->name();
+
+        $expected = new stdClass();
+        $expected->name = self::$faker->name();
+        $expected->buyer = array("1" => $buyer);
+        $result = self::$mapper->map($expected, ProductArrPropDto::class);
+
+        assertNotNull($result);
+        assertInstanceOf(ProductArrPropDto::class, $result);
+        assertEquals($expected->name, $result->name);
+        assertEquals($expected->buyer["1"]->name, $result->buyer[0]);
     }
 }

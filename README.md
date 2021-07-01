@@ -9,7 +9,7 @@ composer require zelak/mapper
 DTOs needs type hinting for the Mapper to work properly
 ```php
 class UserDto {
-    public string $id;
+    public int $id;
     public string $username;
     public string $password;
 }
@@ -38,7 +38,7 @@ Result
 
 // After
 {
-    "id": "1",
+    "id": 1,
     "username": "username",
     "password": "password"
 }

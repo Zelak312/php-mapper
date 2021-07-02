@@ -53,6 +53,7 @@ class ProductDto {
 
 class BuyerDto {
     public string $name;
+    public int $age;
 }
 ```
 Creating the mapper, registering and using the Mapper
@@ -64,6 +65,7 @@ $mapper->createMap(BuyerDto::class);
 // Using
 $buyer = new stdClass();
 $buyer->name = "buyerName";
+$buyer->age = "20";
 $product = new stdClass();
 $product->name = "propName";
 $product->buyer = $buyer;
@@ -76,7 +78,8 @@ Result
 {
     "name": "propName",
     "buyer": {
-        "name": "buyerName"
+        "name": "buyerName",
+        "age": "20"
     }
 }
 
@@ -84,7 +87,8 @@ Result
 {
     "name": "propName",
     "buyer": {
-        "name": "buyerName"
+        "name": "buyerName",
+        "age": 20
     }
 }
 ```

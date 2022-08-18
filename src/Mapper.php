@@ -15,7 +15,6 @@ class Mapper {
     }
     
     public function createMap(string $toName): MappedClass {
-        print($toName . "\n");
         $mapping = new MappedClass($toName);
         array_push($this->mappedClasses, $mapping);
 

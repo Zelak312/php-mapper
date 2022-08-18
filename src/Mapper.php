@@ -14,14 +14,15 @@ class Mapper {
         $this->mappedClasses = array();
     }
     
-    public function createMap(mixed $toName): MappedClass {
+    public function createMap(string $toName): MappedClass {
+        print($toName . "\n");
         $mapping = new MappedClass($toName);
         array_push($this->mappedClasses, $mapping);
 
         return $mapping;
     }
     
-    private function getMapper(mixed $toName): ?MappedClass {
+    private function getMapper(string $toName): ?MappedClass {
         foreach($this->mappedClasses as $mapping) {
             if ($mapping->getTo() != $toName)
                 continue;
@@ -32,7 +33,7 @@ class Mapper {
         return NULL;
     }
     
-    public function map(mixed $data, mixed $toName): mixed {
+    public function map(mixed $data, string $toName): mixed {
         $currentMapper = $this->getMapper($toName);
         
         if ($currentMapper == NULL)

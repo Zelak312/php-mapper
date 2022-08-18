@@ -1,5 +1,7 @@
 <?php
+
 namespace Zelak\Mapper\Tests;
+
 use Faker;
 use Exception;
 use Zelak\Mapper\Mapper;
@@ -17,7 +19,8 @@ final class MapperTest extends TestCase
     private static Faker\Generator $faker;
     private static Mapper $mapper;
 
-    public static function setUpBeforeClass(): void {
+    public static function setUpBeforeClass(): void
+    {
         self::$faker = Faker\Factory::create();
         self::$mapper = new Mapper();
         self::$mapper->createMap(UserDto::class);
@@ -29,7 +32,7 @@ final class MapperTest extends TestCase
             ->specify("buyer", BuyerDto::class);
 
         self::$mapper->createMap(ProductArrPropDto::class)
-        ->specify("buyer", BuyerDto::class)
+            ->specify("buyer", BuyerDto::class)
             ->toArrayProp("buyer", "name");
 
         self::$mapper->createMap(ProductRenameWrongDto::class);
@@ -37,14 +40,15 @@ final class MapperTest extends TestCase
             ->renameProp("buyer", "otherBuyer");
     }
 
-    public function testOneToOneBasicTypes(): void {
+    public function testOneToOneBasicTypes(): void
+    {
         $expected = new stdClass();
         $expected->id = self::$faker->text();
         $expected->username = self::$faker->userName();
         $expected->password = self::$faker->password();
 
         $result = self::$mapper->map($expected, UserDto::class);
-        
+
         assertNotNull($result);
         assertInstanceOf(UserDto::class, $result);
         assertEquals($expected->id, $result->id);
@@ -52,11 +56,12 @@ final class MapperTest extends TestCase
         assertEquals($expected->password, $result->password);
     }
 
-    public function testOneToOneBasicTypesArray(): void {
+    public function testOneToOneBasicTypesArray(): void
+    {
         $expected = array();
         $nbrOfUsers = self::$faker->numberBetween(20, 40);
 
-        for($i = 0; $i < $nbrOfUsers; $i++) {
+        for ($i = 0; $i < $nbrOfUsers; $i++) {
             $user = new stdClass();
             $user->id = self::$faker->text();
             $user->username = self::$faker->userName();
@@ -65,26 +70,28 @@ final class MapperTest extends TestCase
         }
 
         $results = self::$mapper->map($expected, UserDto::class);
-        
+
         assertNotNull($results);
         assertIsArray($results);
         assertEquals($nbrOfUsers, count($results));
 
-        for($i = 0; $i < $nbrOfUsers; $i++) {
+        for ($i = 0; $i < $nbrOfUsers; $i++) {
             assertInstanceOf(UserDto::class, $results[$i]);
             assertEquals($expected[$i]->id, $results[$i]->id);
             assertEquals($expected[$i]->username, $results[$i]->username);
             assertEquals($expected[$i]->password, $results[$i]->password);
         }
     }
-    
-    public function testMappingNotFound(): void {
+
+    public function testMappingNotFound(): void
+    {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("No mapping found for Zelak\Mapper\Tests\NotMappedClassDto");
         self::$mapper->map(new UserDto(), NotMappedClassDto::class);
     }
 
-    public function testOneToOneWithNonBasicTypes(): void {
+    public function testOneToOneWithNonBasicTypes(): void
+    {
         $buyer = new stdClass();
         $buyer->name = self::$faker->name();
         $expected = new stdClass();
@@ -92,18 +99,19 @@ final class MapperTest extends TestCase
         $expected->buyer = $buyer;
 
         $result = self::$mapper->map($expected, ProductDto::class);
-        
+
         assertNotNull($result);
         assertInstanceOf(ProductDto::class, $result);
         assertEquals($expected->name, $result->name);
         assertEquals($expected->buyer->name, $result->buyer->name);
     }
 
-    public function testOneToOneWithNonBasicTypesArray(): void {
+    public function testOneToOneWithNonBasicTypesArray(): void
+    {
         $expected = array();
         $nbr = self::$faker->numberBetween(20, 40);
 
-        for($i = 0; $i < $nbr; $i++) {
+        for ($i = 0; $i < $nbr; $i++) {
             $buyer = new stdClass();
             $buyer->name = self::$faker->name();
             $prod = new stdClass();
@@ -114,19 +122,20 @@ final class MapperTest extends TestCase
         }
 
         $results = self::$mapper->map($expected, ProductDto::class);
-        
+
         assertNotNull($results);
         assertIsArray($results);
         assertEquals($nbr, count($results));
 
-        for($i = 0; $i < $nbr; $i++) {
+        for ($i = 0; $i < $nbr; $i++) {
             assertInstanceOf(ProductDto::class, $results[$i]);
             assertEquals($expected[$i]->name, $results[$i]->name);
             assertEquals($expected[$i]->buyer->name, $results[$i]->buyer->name);
         }
     }
 
-    public function testMappingNotFoundFromProperty(): void {
+    public function testMappingNotFoundFromProperty(): void
+    {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("No mapping found for Zelak\Mapper\Tests\NotMappedClassDto");
 
@@ -137,7 +146,8 @@ final class MapperTest extends TestCase
         self::$mapper->map($prod, ProductNoMapDto::class);
     }
 
-    public function testArrayToArrayBasicTypeMapping(): void {
+    public function testArrayToArrayBasicTypeMapping(): void
+    {
         $buyer = new stdClass();
         $buyer->name = self::$faker->name();
 
@@ -146,14 +156,15 @@ final class MapperTest extends TestCase
         $expected->buyer = array($buyer);
 
         $result = self::$mapper->map($expected, ProductArrDto::class);
-        
+
         assertNotNull($result);
         assertInstanceOf(ProductArrDto::class, $result);
         assertEquals($expected->name, $result->name);
         assertEquals($expected->buyer[0]->name, $result->buyer[0]->name);
     }
 
-    public function testArrayToArrayNonBasicTypeMapping(): void {
+    public function testArrayToArrayNonBasicTypeMapping(): void
+    {
         $buyer = new stdClass();
         $buyer->name = self::$faker->name();
 
@@ -161,14 +172,15 @@ final class MapperTest extends TestCase
         $expected->name = self::$faker->name();
         $expected->buyer = array($buyer);
         $result = self::$mapper->map($expected, ProductArrDto::class);
-        
+
         assertNotNull($result);
         assertInstanceOf(ProductArrDto::class, $result);
         assertEquals($expected->name, $result->name);
         assertEquals($expected->buyer[0]->name, $result->buyer[0]->name);
     }
 
-    public function testRenamePropFail(): void {
+    public function testRenamePropFail(): void
+    {
         $buyer = new stdClass();
         $buyer->name = self::$faker->name();
 
@@ -183,7 +195,8 @@ final class MapperTest extends TestCase
         assertFalse(isset($result->otherBuyer));
     }
 
-    public function testRenamePropSuccess(): void {
+    public function testRenamePropSuccess(): void
+    {
         $buyer = new stdClass();
         $buyer->name = self::$faker->name();
 
@@ -198,7 +211,8 @@ final class MapperTest extends TestCase
         assertEquals($expected->buyer->name, $result->otherBuyer->name);
     }
 
-    public function testToArrayWithArray(): void {
+    public function testToArrayWithArray(): void
+    {
         $buyer = new stdClass();
         $buyer->name = self::$faker->name();
 
@@ -213,7 +227,8 @@ final class MapperTest extends TestCase
         assertEquals($expected->buyer[0]->name, $result->buyer[0]);
     }
 
-    public function testToArrayWithArrayAssoc(): void {
+    public function testToArrayWithArrayAssoc(): void
+    {
         $buyer = new stdClass();
         $buyer->name = self::$faker->name();
 
